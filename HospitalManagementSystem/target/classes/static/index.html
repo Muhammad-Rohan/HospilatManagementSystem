@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital Management System</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; background: #f8f9fa; }
+        h1 { color: #007bff; }
+        .container { max-width: 600px; margin: auto; background: #fff; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
+        label { display: block; margin-top: 1rem; }
+        input, button { padding: 0.5rem; margin-top: 0.5rem; width: 100%; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { border: 1px solid #ddd; padding: 0.5rem; text-align: left; }
+        th { background: #007bff; color: #fff; }
+        tr:nth-child(even) { background: #f2f2f2; }
+        .section { margin-bottom: 2rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Hospital Management System</h1>
+    <div class="section">
+        <h2>Register New Patient</h2>
+        <form id="registerForm">
+            <label>Patient ID: <input type="number" id="patientId" required></label>
+            <label>Name: <input type="text" id="patientName" required></label>
+            <label>Date of Birth: <input type="date" id="patientDOB" required></label>
+            <label>Contact: <input type="text" id="patientContact" required></label>
+            <label>Address: <input type="text" id="patientAddress" required></label>
+            <button type="submit">Register</button>
+        </form>
+        <div id="registerMsg"></div>
+    </div>
+    <div class="section">
+        <h2>All Patients</h2>
+        <button onclick="fetchPatients()">Refresh List</button>
+        <table id="patientsTable">
+            <thead>
+                <tr><th>ID</th><th>Name</th><th>Date of Birth</th><th>Contact</th><th>Address</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div class="section">
+        <h2>Find Patient by ID</h2>
+        <form id="findForm">
+            <label>Patient ID: <input type="number" id="findId" required></label>
+            <button type="submit">Find</button>
+        </form>
+        <div id="findResult"></div>
+    </div>
+</div>
+<script>
+const apiBase = '/patients';
+
+document.getElementById('registerForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const patient = {
+        patientId: parseInt(document.getElementById('patientId').value),
+        patientName: document.getElementById('patientName').value,
+        patientDOB: document.getElementById('patientDOB').value,
+        patientContact: document.getElementById('patientContact').value,
+        patientAddress: document.getElementById('patientAddress').value
+    };
+    let errorMsg = '';
+    try {
+        const res = await fetch(apiBase + '/patient-registration', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(patient)
+        });
+        if (res.ok) {
+            document.getElementById('registerMsg').textContent = 'Patient registered!';
+            fetchPatients();
+        } else {
+            const err = await res.text();
+            document.getElementById('registerMsg').textContent = 'Registration failed: ' + err;
+        }
+    } catch (e) {
+        document.getElementById('registerMsg').textContent = 'Registration failed: ' + e.message;
+    }
+};
+
+async function fetchPatients() {
+    const res = await fetch(apiBase + '/all');
+    const patients = await res.json();
+    const tbody = document.getElementById('patientsTable').querySelector('tbody');
+    tbody.innerHTML = '';
+    patients.forEach(p => {
+        const row = `<tr><td>${p.patientId}</td><td>${p.patientName}</td><td>${p.patientDOB}</td><td>${p.patientContact}</td><td>${p.patientAddress}</td></tr>`;
+        tbody.innerHTML += row;
+    });
+}
+
+fetchPatients();
+
+document.getElementById('findForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const id = document.getElementById('findId').value;
+    const res = await fetch(apiBase + '/patient/' + id);
+    if (res.ok) {
+        const p = await res.json();
+        document.getElementById('findResult').textContent = p && p.patientId ? `Name: ${p.patientName}, DOB: ${p.patientDOB}, Contact: ${p.patientContact}, Address: ${p.patientAddress}` : 'Patient not found.';
+    } else {
+        document.getElementById('findResult').textContent = 'Patient not found.';
+    }
+};
+</script>
+</body>
+</html>
